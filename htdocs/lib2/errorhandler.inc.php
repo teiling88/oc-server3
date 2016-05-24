@@ -93,10 +93,16 @@ function send_errormail($errmsg)
 {
     global $opt, $sql_errormail, $absolute_server_URI;
 
+    $sendMail = true;
+
     if (isset($opt['db']['error']['mail']) && $opt['db']['error']['mail'] != '') {
-        @mb_send_mail($opt['db']['error']['mail'], $opt['mail']['subject'] . " PHP error", $errmsg);
+        $sendMail = @mb_send_mail($opt['db']['error']['mail'], $opt['mail']['subject'] . " PHP error", $errmsg);
     } elseif (isset($sql_errormail) && $sql_errormail != '') {
-        @mb_send_mail($sql_errormail, "[" . $opt['page']['domain'] . "] PHP error", $errmsg);
+        $sendMail = @mb_send_mail($sql_errormail, "[" . $opt['page']['domain'] . "] PHP error", $errmsg);
+    }
+
+    if ($sendMail === false) {
+        throw new \RuntimeException('the E-Mail can not be send.');
     }
 }
 
