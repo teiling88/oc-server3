@@ -93,10 +93,16 @@ function send_errormail($errmsg)
 {
     global $opt, $sql_errormail, $absolute_server_URI;
 
+    $sendMail = true;
+
     if (isset($opt['db']['error']['mail']) && $opt['db']['error']['mail'] != '') {
-        @mb_send_mail($opt['db']['error']['mail'], $opt['mail']['subject'] . " PHP error", $errmsg);
+        $sendMail = @mb_send_mail($opt['db']['error']['mail'], $opt['mail']['subject'] . " PHP error", $errmsg);
     } elseif (isset($sql_errormail) && $sql_errormail != '') {
-        @mb_send_mail($sql_errormail, "[" . $opt['page']['domain'] . "] PHP error", $errmsg);
+        $sendMail = @mb_send_mail($sql_errormail, "[" . $opt['page']['domain'] . "] PHP error", $errmsg);
+    }
+
+    if ($sendMail === false) {
+        throw new \RuntimeException('the E-Mail can not be send.');
     }
 }
 
@@ -120,11 +126,15 @@ function admin_errormail($to, $errortype, $message, $headers)
     $old_logsize = @filesize($errorlog_path) + 0;
     $msg = date("Y-m-d H:i:s.u") . " " . $errortype . "\n" . $message . "\n" .
         "-------------------------------------------------------------------------\n\n";
-    @error_log(
-        $msg,
-        3, // log to file
-        $errorlog_path
-    );
+    try {
+        error_log(
+            $msg,
+            3, // log to file
+            $errorlog_path
+        );
+    } catch (Exception $e) {
+        // @todo implement login
+    }
     // @filesize() may still return the old size here, because logging takes place
     // asynchronously. Instead we calculate the new size:
     $new_logsize = $old_logsize + strlen($msg);
